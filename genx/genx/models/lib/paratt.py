@@ -15,9 +15,18 @@ def Refl(theta, lamda, n, d, sigma, return_int=True):
     # Length of k-vector in vaccum
     k = 2 * math.pi / lamda
     # Calculates the wavevector in each layer
-    Qj = 2 * n[-1] * k * sqrt(n[:, newaxis] ** 2 / n[-1] ** 2 - cos(theta * math.pi / 180) ** 2)
+    Qj = (
+        2
+        * n[-1]
+        * k
+        * sqrt(n[:, newaxis] ** 2 / n[-1] ** 2 - cos(theta * math.pi / 180) ** 2)
+    )
     # Fresnel reflectivity for the interfaces
-    rp = (Qj[1:] - Qj[:-1]) / (Qj[1:] + Qj[:-1]) * exp(-Qj[1:] * Qj[:-1] / 2 * sigma[:, newaxis] ** 2)
+    rp = (
+        (Qj[1:] - Qj[:-1])
+        / (Qj[1:] + Qj[:-1])
+        * exp(-Qj[1:] * Qj[:-1] / 2 * sigma[:, newaxis] ** 2)
+    )
     # Ignoring the top and bottom layer for the calc.
     p = exp(1.0j * d[:, newaxis] * Qj[1:-1])
     # Setting up a matrix for the reduce function. Reduce only takes one array
@@ -40,33 +49,33 @@ def Refl(theta, lamda, n, d, sigma, return_int=True):
 # "Ordinary" implementaion of Parrats recursion formula
 # Q-vector,n-1Dvector, d-1Dvector, sigma-1Dvector
 def ReflQ(Q, lamda, n, d, sigma, return_int=True):
-    # Length of k-vector in vaccum
-    d = d[1:-1]
-    sigma = sigma[:-1]
+    # Length of k-vector in vacuum
     Q0 = 4 * pi / lamda
     Q = Q.astype(complex128)
+
+    # Exclude the first and last entries from d, and the last entry from sigma
+    d = d[1:-1]
+    sigma = sigma[:-1]
+
     # Calculates the wavevector in each layer
-    Qj = sqrt((n[:, newaxis] ** 2 - n[-1] ** 2) * Q0**2 + n[-1] ** 2 * Q**2)
+    n_end_sq = n[-1] ** 2
+    Qj = sqrt((n[:, newaxis] ** 2 - n_end_sq) * Q0**2 + n_end_sq * Q**2)
+
     # Fresnel reflectivity for the interfaces
-    rp = (Qj[1:] - Qj[:-1]) / (Qj[1:] + Qj[:-1]) * exp(-Qj[1:] * Qj[:-1] / 2 * sigma[:, newaxis] ** 2)
-    # print rp.shape #For debugging
-    # print d.shape
-    # print Qj[1:-1].shape
-    p = exp(1.0j * d[:, newaxis] * Qj[1:-1])  # Ignoring the top and bottom layer for the calc.
-    # print p.shape #For debugging
-    # Setting up a matrix for the reduce function. Reduce only takes one array
-    # as argument
-    rpp = array(list(map(lambda x, y: [x, y], rp[1:], p)))
+    Qj_diff = Qj[1:] - Qj[:-1]
+    Qj_sum = Qj[1:] + Qj[:-1]
 
-    # print rpp.shape
-    # Paratt's recursion formula
-    def formula(rtot, rint):
-        return (rint[0] + rtot * rint[1]) / (1 + rtot * rint[0] * rint[1])
+    rp = (Qj_diff / Qj_sum) * exp(-Qj[1:] * Qj[:-1] / 2 * sigma[:, newaxis] ** 2)
 
-    # Implement the recursion formula
-    r = reduce(formula, rpp, rp[0])
-    # print r.shape
-    # return the reflectivity
+    # Phase factors
+    p = exp(1.0j * d[:, newaxis] * Qj[1:-1])
+
+    # Paratt's recursion formula using a loop for efficiency
+    r = rp[0]
+    for rint, phase in zip(rp[1:], p):
+        r = (rint + r * phase) / (1 + rint * r * phase)
+
+    # Return the reflectivity
     if return_int:
         return abs(r) ** 2
     else:
@@ -91,11 +100,17 @@ def Refl_nvary2(theta, lamda, n_vector, d, sigma, return_int=True):
     Qj = 2 * n[-1] * k * sqrt(n**2 / n[-1] ** 2 - cos(theta * math.pi / 180) ** 2)
     # print sigma.shape, Qj.shape
     # Fresnel reflectivity for the interfaces
-    rp = (Qj[1:] - Qj[:-1]) / (Qj[1:] + Qj[:-1]) * exp(-Qj[1:] * Qj[:-1] / 2 * sigma[:, newaxis] ** 2)
+    rp = (
+        (Qj[1:] - Qj[:-1])
+        / (Qj[1:] + Qj[:-1])
+        * exp(-Qj[1:] * Qj[:-1] / 2 * sigma[:, newaxis] ** 2)
+    )
     # print rp.shape #For debugging
     # print d.shape
     # print Qj[1:-1].shape
-    p = exp(1.0j * d[:, newaxis] * Qj[1:-1])  # Ignoring the top and bottom layer for the calc.
+    p = exp(
+        1.0j * d[:, newaxis] * Qj[1:-1]
+    )  # Ignoring the top and bottom layer for the calc.
     # print p.shape #For debugging
     # Setting up a matrix for the reduce function. Reduce only takes one array
     # as argument
@@ -130,7 +145,9 @@ def reflq_kin(q, lamda, n, d, sigma, correct_q=True, return_int=True):
             q_corr = sqrt((n_mean**2 - n[-1] ** 2) * q0**2 + (n[-1] * q) ** 2)
         else:
             q_corr = q
-        rp = (n[:-1] - n[1:])[:, newaxis] * exp(-((q_corr * sigma[:, newaxis]) ** 2) / 2)
+        rp = (n[:-1] - n[1:])[:, newaxis] * exp(
+            -((q_corr * sigma[:, newaxis]) ** 2) / 2
+        )
     else:
         if correct_q:
             # The internal wave vector calacuted with the thickness averaged refractive index.
@@ -167,14 +184,18 @@ def reflq_pseudo_kin(q, lamda, n, d, sigma, return_int=True):
     q_amb = n[-1] * q
     # Top interface
     rp_top = (q_corr - q_amb) / (q_corr + q_amb) * exp(-q_corr * q / 2 * sigma[-1] ** 2)
-    rp_sub = (q_sub - q_corr) / (q_sub + q_corr) * exp(-q_sub * q_corr / 2 * sigma[0] ** 2)
+    rp_sub = (
+        (q_sub - q_corr) / (q_sub + q_corr) * exp(-q_sub * q_corr / 2 * sigma[0] ** 2)
+    )
     # rp_top = -(n[-1] - n_mean)*exp(-(q_corr*sigma[-1])**2/2)*q0**2/q_corr**2/2.
     # rp_sub = -(n_mean - n[0])*exp(-(q_corr*sigma[0])**2/2)*q0**2/q_corr**2/2.
     # Kinematical reflectivity for the interfaces
     n_diff = n - n_mean
     n_diff[0] = 0
     n_diff[-1] = 0
-    rp = (n_diff[:-1] - n_diff[1:])[:, newaxis] * exp(-((q_corr * sigma[:, newaxis]) ** 2) / 2)
+    rp = (n_diff[:-1] - n_diff[1:])[:, newaxis] * exp(
+        -((q_corr * sigma[:, newaxis]) ** 2) / 2
+    )
     p = exp(1.0j * z[:, newaxis] * q_corr)
 
     r_kin = (rp * p).sum(axis=0) * q0**2 / q_corr**2 / 2.0
@@ -199,7 +220,11 @@ def reflq_sra(q, lamda, n, d, sigma, return_int=True):
     else:
         qj = sqrt((n**2 - n[-1] ** 2) * q0**2 + (n[-1] * q) ** 2)
     # Fresnel reflectivity for the interfaces
-    rp = (qj[:-1] - qj[1:]) / (qj[1:] + qj[:-1]) * exp(-qj[1:] * qj[:-1] / 2 * sigma[:, newaxis] ** 2)
+    rp = (
+        (qj[:-1] - qj[1:])
+        / (qj[1:] + qj[:-1])
+        * exp(-qj[1:] * qj[:-1] / 2 * sigma[:, newaxis] ** 2)
+    )
     # The wave does not transverse the ambient and substrate - ignoring them
     # Also, the wave travels from top -> bottom, the array has the first element as the substrate
     # - need to reverse the order.
