@@ -11,28 +11,31 @@ SCALE_CONSTANT = 3.0 / sqrt(8.0)
 
 
 def delta_tau(tau, delta_sign, rho_fraction, zeta):
-    # translated from VB script
-    omega1 = sqrt(tau**2 - 1)
-    omega2 = sqrt(tau**2 - rho_fraction)
+    tau_squared = tau * tau
+    omega1 = sqrt(tau_squared - 1)
+    omega2 = sqrt(tau_squared - rho_fraction)
 
     contrast = (omega2 - omega1) / (omega1 + omega2)
     kappa = (1 - contrast) / (1 + contrast)
 
-    nu = log(1 - zeta) / (2 * log(kappa))
+    log_kappa = log(kappa) if kappa != 1 else 0  # Avoid log(1) leading to 0 value later
+    nu = log(1 - zeta) / (2 * log_kappa)
 
     if nu < 1:
         raise ValueError(
             "Nu should be below 1, check input parameters. "
-            "This can be cause by a zeta value that is too smale, try e.g. 0.95."
+            "This can be caused by a zeta value that is too small, try e.g. 0.95."
         )
 
-    rho_bar = (1 - abs(kappa) ** (1 / nu)) / (1 + abs(kappa) ** (1 / nu))
+    kappa_abs_term = abs(kappa) ** (1 / nu)
+    rho_bar = (1 - kappa_abs_term) / (1 + kappa_abs_term)
     arg = rho_bar * SCALE_CONSTANT
 
-    d_omega1 = 2 * omega1 * arctan(arg / sqrt(1 - arg**2)) / pi
-    wurzel = sqrt(1 + (omega1 + (delta_sign * d_omega1)) * (omega1 + (delta_sign * d_omega1)))
+    sqrt_term = sqrt(1 - arg * arg)
+    d_omega1 = 2 * omega1 * arctan(arg / sqrt_term) / pi
 
-    return delta_sign * (wurzel - tau)
+    omega1_delta = omega1 + (delta_sign * d_omega1)
+    return delta_sign * (sqrt(1 + omega1_delta * omega1_delta) - tau)
 
 
 def sm_layers(rho1, rho2, N, zeta):
@@ -48,7 +51,16 @@ def sm_layers(rho1, rho2, N, zeta):
         epsilon = 1.0
         while epsilon > 1e-4:
             temp1 = tau - delta_tau(tau, -1, rho_fraction, zeta) - wert
-            temp2 = 1e4 * (1.0001 * tau - delta_tau((1.0001 * tau), -1, rho_fraction, zeta) - wert - temp1) / tau
+            temp2 = (
+                1e4
+                * (
+                    1.0001 * tau
+                    - delta_tau((1.0001 * tau), -1, rho_fraction, zeta)
+                    - wert
+                    - temp1
+                )
+                / tau
+            )
             temp3 = temp1 / temp2
             tau = tau - temp3
             epsilon = abs(temp3 / tau)
