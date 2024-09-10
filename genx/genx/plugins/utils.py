@@ -68,7 +68,11 @@ class PluginHandler:
         """
         # Locate all python files in this files directory
         # but excluding this file and not loaded.
-        plugins = [s[:-3] for s in os.listdir(self.directory + self.plugin_folder) if ".py" == s[-3:] and s[:2] != "__"]
+        plugins = [
+            s[:-3]
+            for s in os.listdir(self.directory + self.plugin_folder)
+            if ".py" == s[-3:] and s[:2] != "__"
+        ]
         return plugins
 
     def get_loaded_plugins(self):
@@ -76,7 +80,7 @@ class PluginHandler:
 
         returns a list of the loaded plugins
         """
-        return list(self.loaded_plugins.keys())
+        return list(self.loaded_plugins)
 
     def load_plugin(self, plugin_name):
         """load_plugin(self, plugin_name) --> plugin object
