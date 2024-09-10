@@ -245,10 +245,9 @@ class NumericParameter(ArithmeticParameter):
 
     def _get_value(self, **kwargs):
         """Callback for getting the value of the parameter"""
-        if not self.has_coupled_parameter():
+        if self._coupled_parameter is None:
             return self.value
-        else:
-            return self.validate(self._coupled_parameter(**kwargs))
+        return self.validate(self._coupled_parameter(**kwargs))
 
     def couple_parameter(self, parameter):
         """Couple a parameter to this parameter, replacing the _get_value output with its output"""
@@ -284,7 +283,8 @@ class Enum(Parameter):
                 return self.allowed_values[0]
         raise ValueError(
             "The value to an enum must be either an integer"
-            " between 0 and %d or one of %s" % (len(self.allowed_values), str(self.allowed_values))
+            " between 0 and %d or one of %s"
+            % (len(self.allowed_values), str(self.allowed_values))
         )
 
     def _get_value(self, **kwargs):
@@ -309,7 +309,8 @@ class List(MutableSequence):
     def _check(self, value):
         if self.allowed_type is not None and not isinstance(value, self.allowed_type):
             raise ValueError(
-                "List object can only consist of type %s, trying to set a type: %s" % (self.allowed_type, type(value))
+                "List object can only consist of type %s, trying to set a type: %s"
+                % (self.allowed_type, type(value))
             )
 
     def validate(self, value):
@@ -357,7 +358,8 @@ class HasParameters(object):
                 self.__setattr__(name, kwargs[name])
             else:
                 raise TypeError(
-                    "Creation of %s got an unexpected keyword argument %s" % (self.__class__.__name__, name)
+                    "Creation of %s got an unexpected keyword argument %s"
+                    % (self.__class__.__name__, name)
                 )
 
     def __setattr__(self, name, value):
@@ -372,9 +374,13 @@ class HasParameters(object):
                     # Trying to set a Parameter to a Parameter...
                     # check so that the type is correct:
                     try:
-                        attr.validate(value(parameter=name, **self.validation_kwargs.copy()))
+                        attr.validate(
+                            value(parameter=name, **self.validation_kwargs.copy())
+                        )
                     except ValueError as e:
-                        raise ValueError("Can not set attribute %s. %s" % (name, str(e)))
+                        raise ValueError(
+                            "Can not set attribute %s. %s" % (name, str(e))
+                        )
                     else:
                         # print "Coupling parameter: %s" % name
                         attr.couple_parameter(value)
@@ -396,7 +402,9 @@ class HasParameters(object):
 
         """
         if "parameter" not in kwargs:
-            raise TypeError('Expected argument "parameter" to of a HasParameters object')
+            raise TypeError(
+                'Expected argument "parameter" to of a HasParameters object'
+            )
 
         return self.__getattribute__(kwargs["parameter"])(**kwargs)
 
@@ -420,7 +428,9 @@ class HasParameters(object):
         Returns:
             par_list (list): A list of strings with names of all the parameters.
         """
-        allowed_parameter_classes = NumericParameter if numeric_types_only else Parameter
+        allowed_parameter_classes = (
+            NumericParameter if numeric_types_only else Parameter
+        )
         # Loop thorough all member objects to find the allowed parameters.
         #  Note that if it is not included if it inherits HasParameters or beginning with a _
         members = self.__dict__
@@ -435,7 +445,9 @@ class HasParameters(object):
         [
             [
                 par_list.append(name + par_name)
-                for par_name in members[name].get_parameter_list(numeric_types_only=numeric_types_only)
+                for par_name in members[name].get_parameter_list(
+                    numeric_types_only=numeric_types_only
+                )
             ]
             for name in members
             if isinstance(members[name], HasParameters)
