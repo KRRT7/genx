@@ -7,7 +7,9 @@ Generated 2014-05-06 19:55:13.436879"""
 import numpy as np
 
 
-def calc_xrmr_Xmean(lamda, X_l, X_lu, X_u, u, u_l, u_u, dd_u, dd_l, sigma, sigma_l, sigma_u):
+def calc_xrmr_Xmean(
+    lamda, X_l, X_lu, X_u, u, u_l, u_u, dd_u, dd_l, sigma, sigma_l, sigma_u
+):
     """Function to assemble Xmean for the xrmr module."""
 
     kappa = 2 * np.pi / lamda
@@ -372,93 +374,59 @@ def calc_xrmr_Xmean(lamda, X_l, X_lu, X_u, u, u_l, u_u, dd_u, dd_l, sigma, sigma
 
 def calc_iso_Xmean(X_l, X_lu, X_u, k, k_l, k_u, dd_u, dd_l, sigma, sigma_l, sigma_u):
     """Function to assemble Xmean used for the isotropic case, 2x2 matrices, for the xrmr module."""
-
     Xmean = np.empty(X_l.shape, dtype=np.complex128)
 
-    t1 = (1.0 / 2.0) * sigma_l[:-1] ** 2 * (k[:, :-1] - k_l[:, :-1]) ** 2
-    t2 = (1.0 / 2.0) * sigma_l[:-1] ** 2 * (k[:, :-1] + k_l[:, :-1]) ** 2
-    t3 = (1.0 / 2.0) * sigma[1:] ** 2 * (k[:, 1:] - k[:, :-1]) ** 2
-    t4 = (1.0 / 2.0) * sigma[1:] ** 2 * (k[:, 1:] + k[:, :-1]) ** 2
-    t5 = (1.0 / 2.0) * sigma_u[1:] ** 2 * (k[:, 1:] - k_u[:, 1:]) ** 2
-    t6 = (1.0 / 2.0) * sigma_u[1:] ** 2 * (k[:, 1:] + k_u[:, 1:]) ** 2
+    exp_val_1 = np.exp(
+        -1.0j * (dd_u[1:] * k_u[:, 1:]) - 1.0j * (dd_l[:-1] * k_l[:, :-1])
+    )
+    exp_val_2 = np.exp(
+        -1.0j * (dd_u[1:] * k_u[:, 1:]) + 1.0j * (dd_l[:-1] * k_l[:, :-1])
+    )
+
+    t1 = 0.5 * sigma_l[:-1] ** 2 * (k[:, :-1] - k_l[:, :-1]) ** 2
+    t2 = 0.5 * sigma_l[:-1] ** 2 * (k[:, :-1] + k_l[:, :-1]) ** 2
+    t3 = 0.5 * sigma[1:] ** 2 * (k[:, 1:] - k[:, :-1]) ** 2
+    t4 = 0.5 * sigma[1:] ** 2 * (k[:, 1:] + k[:, :-1]) ** 2
+    t5 = 0.5 * sigma_u[1:] ** 2 * (k[:, 1:] - k_u[:, 1:]) ** 2
+    t6 = 0.5 * sigma_u[1:] ** 2 * (k[:, 1:] + k_u[:, 1:]) ** 2
+
+    common_exp_t = np.exp(-t1 - t3)
+    common_exp_t2 = np.exp(-t2 - t3)
 
     Xmean[0, 0] = (
-        np.exp(-t1 - t3 - t5 - dd_u[1:] * k_u[:, 1:] * 1.0j - dd_l[:-1] * k_l[:, :-1] * 1.0j)
-        * X_u[0, 0]
-        * X_lu[0, 0]
-        * X_l[0, 0]
-        + np.exp(-t1 - t3 - t6 + dd_u[1:] * k_u[:, 1:] * 1.0j - dd_l[:-1] * k_l[:, :-1] * 1.0j)
-        * X_u[1, 0]
-        * X_lu[0, 1]
-        * X_l[0, 0]
-        + np.exp(-t2 - t3 - t5 - dd_u[1:] * k_u[:, 1:] * 1.0j + dd_l[:-1] * k_l[:, :-1] * 1.0j)
-        * X_u[0, 0]
-        * X_lu[1, 0]
-        * X_l[0, 1]
-        + np.exp(-t2 - t3 - t6 + dd_u[1:] * k_u[:, 1:] * 1.0j + dd_l[:-1] * k_l[:, :-1] * 1.0j)
-        * X_u[1, 0]
-        * X_lu[1, 1]
-        * X_l[0, 1]
+        exp_val_1 * common_exp_t * X_u[0, 0] * X_lu[0, 0] * X_l[0, 0]
+        + exp_val_1 * np.exp(-t6) * X_u[1, 0] * X_lu[0, 1] * X_l[0, 0]
+        + exp_val_2 * common_exp_t2 * X_u[0, 0] * X_lu[1, 0] * X_l[0, 1]
+        + exp_val_2 * np.exp(-t6) * X_u[1, 0] * X_lu[1, 1] * X_l[0, 1]
     )
+
     Xmean[0, 1] = (
-        np.exp(-t1 - t4 - t6 - dd_u[1:] * k_u[:, 1:] * 1.0j - dd_l[:-1] * k_l[:, :-1] * 1.0j)
-        * X_u[0, 1]
-        * X_lu[0, 0]
-        * X_l[0, 0]
-        + np.exp(-t1 - t4 - t5 + dd_u[1:] * k_u[:, 1:] * 1.0j - dd_l[:-1] * k_l[:, :-1] * 1.0j)
-        * X_u[1, 1]
-        * X_lu[0, 1]
-        * X_l[0, 0]
-        + np.exp(-t2 - t4 - t6 - dd_u[1:] * k_u[:, 1:] * 1.0j + dd_l[:-1] * k_l[:, :-1] * 1.0j)
-        * X_u[0, 1]
-        * X_lu[1, 0]
-        * X_l[0, 1]
-        + np.exp(-t2 - t4 - t5 + dd_u[1:] * k_u[:, 1:] * 1.0j + dd_l[:-1] * k_l[:, :-1] * 1.0j)
-        * X_u[1, 1]
-        * X_lu[1, 1]
-        * X_l[0, 1]
+        exp_val_1 * np.exp(-t4) * X_u[0, 1] * X_lu[0, 0] * X_l[0, 0]
+        + exp_val_1 * np.exp(-t5) * X_u[1, 1] * X_lu[0, 1] * X_l[0, 0]
+        + exp_val_2 * np.exp(-t4) * X_u[0, 1] * X_lu[1, 0] * X_l[0, 1]
+        + exp_val_2 * np.exp(-t5) * X_u[1, 1] * X_lu[1, 1] * X_l[0, 1]
     )
+
     Xmean[1, 0] = (
-        np.exp(-t2 - t4 - t5 - dd_u[1:] * k_u[:, 1:] * 1.0j - dd_l[:-1] * k_l[:, :-1] * 1.0j)
-        * X_u[0, 0]
-        * X_lu[0, 0]
-        * X_l[1, 0]
-        + np.exp(-t1 - t4 - t5 - dd_u[1:] * k_u[:, 1:] * 1.0j + dd_l[:-1] * k_l[:, :-1] * 1.0j)
-        * X_u[0, 0]
-        * X_lu[1, 0]
-        * X_l[1, 1]
-        + np.exp(-t2 - t4 - t6 + dd_u[1:] * k_u[:, 1:] * 1.0j - dd_l[:-1] * k_l[:, :-1] * 1.0j)
-        * X_u[1, 0]
-        * X_lu[0, 1]
-        * X_l[1, 0]
-        + np.exp(-t1 - t4 - t6 + dd_u[1:] * k_u[:, 1:] * 1.0j + dd_l[:-1] * k_l[:, :-1] * 1.0j)
-        * X_u[1, 0]
-        * X_lu[1, 1]
-        * X_l[1, 1]
+        exp_val_1 * common_exp_t2 * X_u[0, 0] * X_lu[0, 0] * X_l[1, 0]
+        + np.exp(-t4 - t5) * X_u[0, 0] * X_lu[1, 0] * X_l[1, 1]
+        + exp_val_1 * np.exp(-t6) * X_u[1, 0] * X_lu[0, 1] * X_l[1, 0]
+        + exp_val_2 * np.exp(-t6) * X_u[1, 0] * X_lu[1, 1] * X_l[1, 1]
     )
+
     Xmean[1, 1] = (
-        np.exp(-t2 - t3 - t6 - dd_u[1:] * k_u[:, 1:] * 1.0j - dd_l[:-1] * k_l[:, :-1] * 1.0j)
-        * X_u[0, 1]
-        * X_lu[0, 0]
-        * X_l[1, 0]
-        + np.exp(-t1 - t3 - t6 - dd_u[1:] * k_u[:, 1:] * 1.0j + dd_l[:-1] * k_l[:, :-1] * 1.0j)
-        * X_u[0, 1]
-        * X_lu[1, 0]
-        * X_l[1, 1]
-        + np.exp(-t2 - t3 - t5 + dd_u[1:] * k_u[:, 1:] * 1.0j - dd_l[:-1] * k_l[:, :-1] * 1.0j)
-        * X_u[1, 1]
-        * X_lu[0, 1]
-        * X_l[1, 0]
-        + np.exp(-t1 - t3 - t5 + dd_u[1:] * k_u[:, 1:] * 1.0j + dd_l[:-1] * k_l[:, :-1] * 1.0j)
-        * X_u[1, 1]
-        * X_lu[1, 1]
-        * X_l[1, 1]
+        exp_val_1 * np.exp(-t6) * X_u[0, 1] * X_lu[0, 0] * X_l[1, 0]
+        + exp_val_2 * np.exp(-t6) * X_u[0, 1] * X_lu[1, 0] * X_l[1, 1]
+        + common_exp_t2 * np.exp(-t5) * X_u[1, 1] * X_lu[0, 1] * X_l[1, 0]
+        + np.exp(-t1 - t3 - t5) * X_u[1, 1] * X_lu[1, 1] * X_l[1, 1]
     )
 
     return Xmean
 
 
-def calc_neu_Xmean(X_l, X_lu, X_u, km, kp, km_l, kp_l, km_u, kp_u, dd_u, dd_l, sigma, sigma_l, sigma_u):
+def calc_neu_Xmean(
+    X_l, X_lu, X_u, km, kp, km_l, kp_l, km_u, kp_u, dd_u, dd_l, sigma, sigma_l, sigma_u
+):
     """Function to assemble Xmean used for neutron calcs, 4x4 matrices, for the mag_refl module."""
 
     Xmean = np.empty(X_l.shape, dtype=np.complex128)
@@ -489,1057 +457,2593 @@ def calc_neu_Xmean(X_l, X_lu, X_u, km, kp, km_l, kp_l, km_u, kp_u, dd_u, dd_l, s
     t24 = (1.0 / 2.0) * sigma_u[1:] ** 2 * (km[:, 1:] + km_u[:, 1:]) ** 2
 
     Xmean[0, 0] = (
-        np.exp(-t1 - t9 - t17 - dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        np.exp(
+            -t1
+            - t9
+            - t17
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[0, 0]
         * X_lu[0, 0]
         * X_l[0, 0]
-        + np.exp(-t1 - t9 - t18 + dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t1
+            - t9
+            - t18
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[1, 0]
         * X_lu[0, 1]
         * X_l[0, 0]
-        + np.exp(-t2 - t9 - t17 - dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t2
+            - t9
+            - t17
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[0, 0]
         * X_lu[1, 0]
         * X_l[0, 1]
-        + np.exp(-t1 - t9 - t19 - dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t1
+            - t9
+            - t19
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[2, 0]
         * X_lu[0, 2]
         * X_l[0, 0]
-        + np.exp(-t3 - t9 - t17 - dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t3
+            - t9
+            - t17
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[0, 0]
         * X_lu[2, 0]
         * X_l[0, 2]
-        + np.exp(-t2 - t9 - t18 + dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t2
+            - t9
+            - t18
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[1, 0]
         * X_lu[1, 1]
         * X_l[0, 1]
-        + np.exp(-t2 - t9 - t19 - dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t2
+            - t9
+            - t19
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[2, 0]
         * X_lu[1, 2]
         * X_l[0, 1]
-        + np.exp(-t3 - t9 - t18 + dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t3
+            - t9
+            - t18
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[1, 0]
         * X_lu[2, 1]
         * X_l[0, 2]
-        + np.exp(-t1 - t9 - t21 + dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t1
+            - t9
+            - t21
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[3, 0]
         * X_lu[0, 3]
         * X_l[0, 0]
-        + np.exp(-t5 - t9 - t17 - dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t5
+            - t9
+            - t17
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[0, 0]
         * X_lu[3, 0]
         * X_l[0, 3]
-        + np.exp(-t3 - t9 - t19 - dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t3
+            - t9
+            - t19
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[2, 0]
         * X_lu[2, 2]
         * X_l[0, 2]
-        + np.exp(-t2 - t9 - t21 + dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t2
+            - t9
+            - t21
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[3, 0]
         * X_lu[1, 3]
         * X_l[0, 1]
-        + np.exp(-t5 - t9 - t18 + dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t5
+            - t9
+            - t18
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[1, 0]
         * X_lu[3, 1]
         * X_l[0, 3]
-        + np.exp(-t3 - t9 - t21 + dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t3
+            - t9
+            - t21
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[3, 0]
         * X_lu[2, 3]
         * X_l[0, 2]
-        + np.exp(-t5 - t9 - t19 - dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t5
+            - t9
+            - t19
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[2, 0]
         * X_lu[3, 2]
         * X_l[0, 3]
-        + np.exp(-t5 - t9 - t21 + dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t5
+            - t9
+            - t21
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[3, 0]
         * X_lu[3, 3]
         * X_l[0, 3]
     )
     Xmean[0, 1] = (
-        np.exp(-t1 - t10 - t18 - dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        np.exp(
+            -t1
+            - t10
+            - t18
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[0, 1]
         * X_lu[0, 0]
         * X_l[0, 0]
-        + np.exp(-t1 - t10 - t17 + dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t1
+            - t10
+            - t17
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[1, 1]
         * X_lu[0, 1]
         * X_l[0, 0]
-        + np.exp(-t2 - t10 - t18 - dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t2
+            - t10
+            - t18
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[0, 1]
         * X_lu[1, 0]
         * X_l[0, 1]
-        + np.exp(-t3 - t10 - t18 - dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t3
+            - t10
+            - t18
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[0, 1]
         * X_lu[2, 0]
         * X_l[0, 2]
-        + np.exp(-t1 - t10 - t21 - dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t1
+            - t10
+            - t21
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[2, 1]
         * X_lu[0, 2]
         * X_l[0, 0]
-        + np.exp(-t2 - t10 - t17 + dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t2
+            - t10
+            - t17
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[1, 1]
         * X_lu[1, 1]
         * X_l[0, 1]
-        + np.exp(-t1 - t10 - t19 + dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t1
+            - t10
+            - t19
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[3, 1]
         * X_lu[0, 3]
         * X_l[0, 0]
-        + np.exp(-t3 - t10 - t17 + dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t3
+            - t10
+            - t17
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[1, 1]
         * X_lu[2, 1]
         * X_l[0, 2]
-        + np.exp(-t2 - t10 - t21 - dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t2
+            - t10
+            - t21
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[2, 1]
         * X_lu[1, 2]
         * X_l[0, 1]
-        + np.exp(-t5 - t10 - t18 - dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t5
+            - t10
+            - t18
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[0, 1]
         * X_lu[3, 0]
         * X_l[0, 3]
-        + np.exp(-t2 - t10 - t19 + dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t2
+            - t10
+            - t19
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[3, 1]
         * X_lu[1, 3]
         * X_l[0, 1]
-        + np.exp(-t3 - t10 - t21 - dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t3
+            - t10
+            - t21
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[2, 1]
         * X_lu[2, 2]
         * X_l[0, 2]
-        + np.exp(-t5 - t10 - t17 + dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t5
+            - t10
+            - t17
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[1, 1]
         * X_lu[3, 1]
         * X_l[0, 3]
-        + np.exp(-t3 - t10 - t19 + dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t3
+            - t10
+            - t19
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[3, 1]
         * X_lu[2, 3]
         * X_l[0, 2]
-        + np.exp(-t5 - t10 - t21 - dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t5
+            - t10
+            - t21
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[2, 1]
         * X_lu[3, 2]
         * X_l[0, 3]
-        + np.exp(-t5 - t10 - t19 + dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t5
+            - t10
+            - t19
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[3, 1]
         * X_lu[3, 3]
         * X_l[0, 3]
     )
     Xmean[0, 2] = (
-        np.exp(-t1 - t12 - t20 - dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        np.exp(
+            -t1
+            - t12
+            - t20
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[0, 2]
         * X_lu[0, 0]
         * X_l[0, 0]
-        + np.exp(-t2 - t12 - t20 - dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t2
+            - t12
+            - t20
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[0, 2]
         * X_lu[1, 0]
         * X_l[0, 1]
-        + np.exp(-t1 - t12 - t22 + dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t1
+            - t12
+            - t22
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[1, 2]
         * X_lu[0, 1]
         * X_l[0, 0]
-        + np.exp(-t3 - t12 - t20 - dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t3
+            - t12
+            - t20
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[0, 2]
         * X_lu[2, 0]
         * X_l[0, 2]
-        + np.exp(-t1 - t12 - t23 - dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t1
+            - t12
+            - t23
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[2, 2]
         * X_lu[0, 2]
         * X_l[0, 0]
-        + np.exp(-t2 - t12 - t22 + dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t2
+            - t12
+            - t22
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[1, 2]
         * X_lu[1, 1]
         * X_l[0, 1]
-        + np.exp(-t1 - t12 - t24 + dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t1
+            - t12
+            - t24
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[3, 2]
         * X_lu[0, 3]
         * X_l[0, 0]
-        + np.exp(-t2 - t12 - t23 - dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t2
+            - t12
+            - t23
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[2, 2]
         * X_lu[1, 2]
         * X_l[0, 1]
-        + np.exp(-t3 - t12 - t22 + dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t3
+            - t12
+            - t22
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[1, 2]
         * X_lu[2, 1]
         * X_l[0, 2]
-        + np.exp(-t5 - t12 - t20 - dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t5
+            - t12
+            - t20
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[0, 2]
         * X_lu[3, 0]
         * X_l[0, 3]
-        + np.exp(-t3 - t12 - t23 - dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t3
+            - t12
+            - t23
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[2, 2]
         * X_lu[2, 2]
         * X_l[0, 2]
-        + np.exp(-t2 - t12 - t24 + dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t2
+            - t12
+            - t24
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[3, 2]
         * X_lu[1, 3]
         * X_l[0, 1]
-        + np.exp(-t5 - t12 - t22 + dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t5
+            - t12
+            - t22
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[1, 2]
         * X_lu[3, 1]
         * X_l[0, 3]
-        + np.exp(-t3 - t12 - t24 + dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t3
+            - t12
+            - t24
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[3, 2]
         * X_lu[2, 3]
         * X_l[0, 2]
-        + np.exp(-t5 - t12 - t23 - dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t5
+            - t12
+            - t23
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[2, 2]
         * X_lu[3, 2]
         * X_l[0, 3]
-        + np.exp(-t5 - t12 - t24 + dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t5
+            - t12
+            - t24
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[3, 2]
         * X_lu[3, 3]
         * X_l[0, 3]
     )
     Xmean[0, 3] = (
-        np.exp(-t1 - t14 - t22 - dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        np.exp(
+            -t1
+            - t14
+            - t22
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[0, 3]
         * X_lu[0, 0]
         * X_l[0, 0]
-        + np.exp(-t1 - t14 - t20 + dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t1
+            - t14
+            - t20
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[1, 3]
         * X_lu[0, 1]
         * X_l[0, 0]
-        + np.exp(-t2 - t14 - t22 - dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t2
+            - t14
+            - t22
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[0, 3]
         * X_lu[1, 0]
         * X_l[0, 1]
-        + np.exp(-t1 - t14 - t24 - dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t1
+            - t14
+            - t24
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[2, 3]
         * X_lu[0, 2]
         * X_l[0, 0]
-        + np.exp(-t2 - t14 - t20 + dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t2
+            - t14
+            - t20
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[1, 3]
         * X_lu[1, 1]
         * X_l[0, 1]
-        + np.exp(-t3 - t14 - t22 - dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t3
+            - t14
+            - t22
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[0, 3]
         * X_lu[2, 0]
         * X_l[0, 2]
-        + np.exp(-t3 - t14 - t20 + dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t3
+            - t14
+            - t20
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[1, 3]
         * X_lu[2, 1]
         * X_l[0, 2]
-        + np.exp(-t1 - t14 - t23 + dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t1
+            - t14
+            - t23
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[3, 3]
         * X_lu[0, 3]
         * X_l[0, 0]
-        + np.exp(-t2 - t14 - t24 - dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t2
+            - t14
+            - t24
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[2, 3]
         * X_lu[1, 2]
         * X_l[0, 1]
-        + np.exp(-t5 - t14 - t22 - dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t5
+            - t14
+            - t22
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[0, 3]
         * X_lu[3, 0]
         * X_l[0, 3]
-        + np.exp(-t3 - t14 - t24 - dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t3
+            - t14
+            - t24
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[2, 3]
         * X_lu[2, 2]
         * X_l[0, 2]
-        + np.exp(-t2 - t14 - t23 + dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t2
+            - t14
+            - t23
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[3, 3]
         * X_lu[1, 3]
         * X_l[0, 1]
-        + np.exp(-t5 - t14 - t20 + dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t5
+            - t14
+            - t20
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[1, 3]
         * X_lu[3, 1]
         * X_l[0, 3]
-        + np.exp(-t3 - t14 - t23 + dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t3
+            - t14
+            - t23
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[3, 3]
         * X_lu[2, 3]
         * X_l[0, 2]
-        + np.exp(-t5 - t14 - t24 - dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t5
+            - t14
+            - t24
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[2, 3]
         * X_lu[3, 2]
         * X_l[0, 3]
-        + np.exp(-t5 - t14 - t23 + dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t5
+            - t14
+            - t23
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[3, 3]
         * X_lu[3, 3]
         * X_l[0, 3]
     )
     Xmean[1, 0] = (
-        np.exp(-t2 - t10 - t17 - dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        np.exp(
+            -t2
+            - t10
+            - t17
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[0, 0]
         * X_lu[0, 0]
         * X_l[1, 0]
-        + np.exp(-t1 - t10 - t17 - dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t1
+            - t10
+            - t17
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[0, 0]
         * X_lu[1, 0]
         * X_l[1, 1]
-        + np.exp(-t2 - t10 - t18 + dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t2
+            - t10
+            - t18
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[1, 0]
         * X_lu[0, 1]
         * X_l[1, 0]
-        + np.exp(-t2 - t10 - t19 - dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t2
+            - t10
+            - t19
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[2, 0]
         * X_lu[0, 2]
         * X_l[1, 0]
-        + np.exp(-t1 - t10 - t18 + dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t1
+            - t10
+            - t18
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[1, 0]
         * X_lu[1, 1]
         * X_l[1, 1]
-        + np.exp(-t5 - t10 - t17 - dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t5
+            - t10
+            - t17
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[0, 0]
         * X_lu[2, 0]
         * X_l[1, 2]
-        + np.exp(-t1 - t10 - t19 - dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t1
+            - t10
+            - t19
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[2, 0]
         * X_lu[1, 2]
         * X_l[1, 1]
-        + np.exp(-t3 - t10 - t17 - dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t3
+            - t10
+            - t17
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[0, 0]
         * X_lu[3, 0]
         * X_l[1, 3]
-        + np.exp(-t2 - t10 - t21 + dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t2
+            - t10
+            - t21
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[3, 0]
         * X_lu[0, 3]
         * X_l[1, 0]
-        + np.exp(-t5 - t10 - t18 + dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t5
+            - t10
+            - t18
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[1, 0]
         * X_lu[2, 1]
         * X_l[1, 2]
-        + np.exp(-t3 - t10 - t18 + dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t3
+            - t10
+            - t18
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[1, 0]
         * X_lu[3, 1]
         * X_l[1, 3]
-        + np.exp(-t5 - t10 - t19 - dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t5
+            - t10
+            - t19
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[2, 0]
         * X_lu[2, 2]
         * X_l[1, 2]
-        + np.exp(-t1 - t10 - t21 + dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t1
+            - t10
+            - t21
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[3, 0]
         * X_lu[1, 3]
         * X_l[1, 1]
-        + np.exp(-t3 - t10 - t19 - dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t3
+            - t10
+            - t19
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[2, 0]
         * X_lu[3, 2]
         * X_l[1, 3]
-        + np.exp(-t5 - t10 - t21 + dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t5
+            - t10
+            - t21
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[3, 0]
         * X_lu[2, 3]
         * X_l[1, 2]
-        + np.exp(-t3 - t10 - t21 + dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t3
+            - t10
+            - t21
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[3, 0]
         * X_lu[3, 3]
         * X_l[1, 3]
     )
     Xmean[1, 1] = (
-        np.exp(-t2 - t9 - t18 - dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        np.exp(
+            -t2
+            - t9
+            - t18
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[0, 1]
         * X_lu[0, 0]
         * X_l[1, 0]
-        + np.exp(-t1 - t9 - t18 - dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t1
+            - t9
+            - t18
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[0, 1]
         * X_lu[1, 0]
         * X_l[1, 1]
-        + np.exp(-t2 - t9 - t17 + dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t2
+            - t9
+            - t17
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[1, 1]
         * X_lu[0, 1]
         * X_l[1, 0]
-        + np.exp(-t1 - t9 - t17 + dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t1
+            - t9
+            - t17
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[1, 1]
         * X_lu[1, 1]
         * X_l[1, 1]
-        + np.exp(-t2 - t9 - t21 - dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t2
+            - t9
+            - t21
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[2, 1]
         * X_lu[0, 2]
         * X_l[1, 0]
-        + np.exp(-t5 - t9 - t18 - dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t5
+            - t9
+            - t18
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[0, 1]
         * X_lu[2, 0]
         * X_l[1, 2]
-        + np.exp(-t2 - t9 - t19 + dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t2
+            - t9
+            - t19
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[3, 1]
         * X_lu[0, 3]
         * X_l[1, 0]
-        + np.exp(-t3 - t9 - t18 - dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t3
+            - t9
+            - t18
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[0, 1]
         * X_lu[3, 0]
         * X_l[1, 3]
-        + np.exp(-t1 - t9 - t21 - dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t1
+            - t9
+            - t21
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[2, 1]
         * X_lu[1, 2]
         * X_l[1, 1]
-        + np.exp(-t5 - t9 - t17 + dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t5
+            - t9
+            - t17
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[1, 1]
         * X_lu[2, 1]
         * X_l[1, 2]
-        + np.exp(-t1 - t9 - t19 + dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t1
+            - t9
+            - t19
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[3, 1]
         * X_lu[1, 3]
         * X_l[1, 1]
-        + np.exp(-t3 - t9 - t17 + dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t3
+            - t9
+            - t17
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[1, 1]
         * X_lu[3, 1]
         * X_l[1, 3]
-        + np.exp(-t5 - t9 - t21 - dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t5
+            - t9
+            - t21
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[2, 1]
         * X_lu[2, 2]
         * X_l[1, 2]
-        + np.exp(-t3 - t9 - t21 - dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t3
+            - t9
+            - t21
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[2, 1]
         * X_lu[3, 2]
         * X_l[1, 3]
-        + np.exp(-t5 - t9 - t19 + dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t5
+            - t9
+            - t19
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[3, 1]
         * X_lu[2, 3]
         * X_l[1, 2]
-        + np.exp(-t3 - t9 - t19 + dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t3
+            - t9
+            - t19
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[3, 1]
         * X_lu[3, 3]
         * X_l[1, 3]
     )
     Xmean[1, 2] = (
-        np.exp(-t2 - t14 - t20 - dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        np.exp(
+            -t2
+            - t14
+            - t20
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[0, 2]
         * X_lu[0, 0]
         * X_l[1, 0]
-        + np.exp(-t1 - t14 - t20 - dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t1
+            - t14
+            - t20
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[0, 2]
         * X_lu[1, 0]
         * X_l[1, 1]
-        + np.exp(-t2 - t14 - t22 + dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t2
+            - t14
+            - t22
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[1, 2]
         * X_lu[0, 1]
         * X_l[1, 0]
-        + np.exp(-t2 - t14 - t23 - dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t2
+            - t14
+            - t23
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[2, 2]
         * X_lu[0, 2]
         * X_l[1, 0]
-        + np.exp(-t5 - t14 - t20 - dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t5
+            - t14
+            - t20
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[0, 2]
         * X_lu[2, 0]
         * X_l[1, 2]
-        + np.exp(-t1 - t14 - t22 + dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t1
+            - t14
+            - t22
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[1, 2]
         * X_lu[1, 1]
         * X_l[1, 1]
-        + np.exp(-t3 - t14 - t20 - dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t3
+            - t14
+            - t20
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[0, 2]
         * X_lu[3, 0]
         * X_l[1, 3]
-        + np.exp(-t1 - t14 - t23 - dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t1
+            - t14
+            - t23
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[2, 2]
         * X_lu[1, 2]
         * X_l[1, 1]
-        + np.exp(-t2 - t14 - t24 + dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t2
+            - t14
+            - t24
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[3, 2]
         * X_lu[0, 3]
         * X_l[1, 0]
-        + np.exp(-t5 - t14 - t22 + dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t5
+            - t14
+            - t22
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[1, 2]
         * X_lu[2, 1]
         * X_l[1, 2]
-        + np.exp(-t1 - t14 - t24 + dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t1
+            - t14
+            - t24
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[3, 2]
         * X_lu[1, 3]
         * X_l[1, 1]
-        + np.exp(-t3 - t14 - t22 + dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t3
+            - t14
+            - t22
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[1, 2]
         * X_lu[3, 1]
         * X_l[1, 3]
-        + np.exp(-t5 - t14 - t23 - dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t5
+            - t14
+            - t23
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[2, 2]
         * X_lu[2, 2]
         * X_l[1, 2]
-        + np.exp(-t3 - t14 - t23 - dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t3
+            - t14
+            - t23
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[2, 2]
         * X_lu[3, 2]
         * X_l[1, 3]
-        + np.exp(-t5 - t14 - t24 + dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t5
+            - t14
+            - t24
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[3, 2]
         * X_lu[2, 3]
         * X_l[1, 2]
-        + np.exp(-t3 - t14 - t24 + dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t3
+            - t14
+            - t24
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[3, 2]
         * X_lu[3, 3]
         * X_l[1, 3]
     )
     Xmean[1, 3] = (
-        np.exp(-t2 - t12 - t22 - dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        np.exp(
+            -t2
+            - t12
+            - t22
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[0, 3]
         * X_lu[0, 0]
         * X_l[1, 0]
-        + np.exp(-t2 - t12 - t20 + dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t2
+            - t12
+            - t20
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[1, 3]
         * X_lu[0, 1]
         * X_l[1, 0]
-        + np.exp(-t1 - t12 - t22 - dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t1
+            - t12
+            - t22
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[0, 3]
         * X_lu[1, 0]
         * X_l[1, 1]
-        + np.exp(-t1 - t12 - t20 + dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t1
+            - t12
+            - t20
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[1, 3]
         * X_lu[1, 1]
         * X_l[1, 1]
-        + np.exp(-t2 - t12 - t24 - dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t2
+            - t12
+            - t24
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[2, 3]
         * X_lu[0, 2]
         * X_l[1, 0]
-        + np.exp(-t5 - t12 - t22 - dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t5
+            - t12
+            - t22
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[0, 3]
         * X_lu[2, 0]
         * X_l[1, 2]
-        + np.exp(-t1 - t12 - t24 - dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t1
+            - t12
+            - t24
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[2, 3]
         * X_lu[1, 2]
         * X_l[1, 1]
-        + np.exp(-t2 - t12 - t23 + dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t2
+            - t12
+            - t23
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[3, 3]
         * X_lu[0, 3]
         * X_l[1, 0]
-        + np.exp(-t3 - t12 - t22 - dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t3
+            - t12
+            - t22
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[0, 3]
         * X_lu[3, 0]
         * X_l[1, 3]
-        + np.exp(-t5 - t12 - t20 + dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t5
+            - t12
+            - t20
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[1, 3]
         * X_lu[2, 1]
         * X_l[1, 2]
-        + np.exp(-t3 - t12 - t20 + dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t3
+            - t12
+            - t20
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[1, 3]
         * X_lu[3, 1]
         * X_l[1, 3]
-        + np.exp(-t1 - t12 - t23 + dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t1
+            - t12
+            - t23
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[3, 3]
         * X_lu[1, 3]
         * X_l[1, 1]
-        + np.exp(-t5 - t12 - t24 - dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t5
+            - t12
+            - t24
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[2, 3]
         * X_lu[2, 2]
         * X_l[1, 2]
-        + np.exp(-t3 - t12 - t24 - dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t3
+            - t12
+            - t24
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[2, 3]
         * X_lu[3, 2]
         * X_l[1, 3]
-        + np.exp(-t5 - t12 - t23 + dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t5
+            - t12
+            - t23
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[3, 3]
         * X_lu[2, 3]
         * X_l[1, 2]
-        + np.exp(-t3 - t12 - t23 + dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t3
+            - t12
+            - t23
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[3, 3]
         * X_lu[3, 3]
         * X_l[1, 3]
     )
     Xmean[2, 0] = (
-        np.exp(-t4 - t11 - t17 - dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        np.exp(
+            -t4
+            - t11
+            - t17
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[0, 0]
         * X_lu[0, 0]
         * X_l[2, 0]
-        + np.exp(-t4 - t11 - t18 + dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t4
+            - t11
+            - t18
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[1, 0]
         * X_lu[0, 1]
         * X_l[2, 0]
-        + np.exp(-t6 - t11 - t17 - dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t6
+            - t11
+            - t17
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[0, 0]
         * X_lu[1, 0]
         * X_l[2, 1]
-        + np.exp(-t4 - t11 - t19 - dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t4
+            - t11
+            - t19
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[2, 0]
         * X_lu[0, 2]
         * X_l[2, 0]
-        + np.exp(-t7 - t11 - t17 - dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t7
+            - t11
+            - t17
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[0, 0]
         * X_lu[2, 0]
         * X_l[2, 2]
-        + np.exp(-t6 - t11 - t18 + dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t6
+            - t11
+            - t18
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[1, 0]
         * X_lu[1, 1]
         * X_l[2, 1]
-        + np.exp(-t4 - t11 - t21 + dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t4
+            - t11
+            - t21
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[3, 0]
         * X_lu[0, 3]
         * X_l[2, 0]
-        + np.exp(-t6 - t11 - t19 - dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t6
+            - t11
+            - t19
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[2, 0]
         * X_lu[1, 2]
         * X_l[2, 1]
-        + np.exp(-t7 - t11 - t18 + dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t7
+            - t11
+            - t18
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[1, 0]
         * X_lu[2, 1]
         * X_l[2, 2]
-        + np.exp(-t8 - t11 - t17 - dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t8
+            - t11
+            - t17
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[0, 0]
         * X_lu[3, 0]
         * X_l[2, 3]
-        + np.exp(-t7 - t11 - t19 - dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t7
+            - t11
+            - t19
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[2, 0]
         * X_lu[2, 2]
         * X_l[2, 2]
-        + np.exp(-t8 - t11 - t18 + dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t8
+            - t11
+            - t18
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[1, 0]
         * X_lu[3, 1]
         * X_l[2, 3]
-        + np.exp(-t6 - t11 - t21 + dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t6
+            - t11
+            - t21
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[3, 0]
         * X_lu[1, 3]
         * X_l[2, 1]
-        + np.exp(-t8 - t11 - t19 - dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t8
+            - t11
+            - t19
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[2, 0]
         * X_lu[3, 2]
         * X_l[2, 3]
-        + np.exp(-t7 - t11 - t21 + dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t7
+            - t11
+            - t21
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[3, 0]
         * X_lu[2, 3]
         * X_l[2, 2]
-        + np.exp(-t8 - t11 - t21 + dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t8
+            - t11
+            - t21
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[3, 0]
         * X_lu[3, 3]
         * X_l[2, 3]
     )
     Xmean[2, 1] = (
-        np.exp(-t4 - t13 - t18 - dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        np.exp(
+            -t4
+            - t13
+            - t18
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[0, 1]
         * X_lu[0, 0]
         * X_l[2, 0]
-        + np.exp(-t4 - t13 - t17 + dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t4
+            - t13
+            - t17
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[1, 1]
         * X_lu[0, 1]
         * X_l[2, 0]
-        + np.exp(-t6 - t13 - t18 - dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t6
+            - t13
+            - t18
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[0, 1]
         * X_lu[1, 0]
         * X_l[2, 1]
-        + np.exp(-t4 - t13 - t21 - dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t4
+            - t13
+            - t21
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[2, 1]
         * X_lu[0, 2]
         * X_l[2, 0]
-        + np.exp(-t7 - t13 - t18 - dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t7
+            - t13
+            - t18
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[0, 1]
         * X_lu[2, 0]
         * X_l[2, 2]
-        + np.exp(-t6 - t13 - t17 + dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t6
+            - t13
+            - t17
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[1, 1]
         * X_lu[1, 1]
         * X_l[2, 1]
-        + np.exp(-t4 - t13 - t19 + dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t4
+            - t13
+            - t19
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[3, 1]
         * X_lu[0, 3]
         * X_l[2, 0]
-        + np.exp(-t7 - t13 - t17 + dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t7
+            - t13
+            - t17
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[1, 1]
         * X_lu[2, 1]
         * X_l[2, 2]
-        + np.exp(-t8 - t13 - t18 - dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t8
+            - t13
+            - t18
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[0, 1]
         * X_lu[3, 0]
         * X_l[2, 3]
-        + np.exp(-t6 - t13 - t21 - dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t6
+            - t13
+            - t21
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[2, 1]
         * X_lu[1, 2]
         * X_l[2, 1]
-        + np.exp(-t6 - t13 - t19 + dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t6
+            - t13
+            - t19
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[3, 1]
         * X_lu[1, 3]
         * X_l[2, 1]
-        + np.exp(-t7 - t13 - t21 - dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t7
+            - t13
+            - t21
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[2, 1]
         * X_lu[2, 2]
         * X_l[2, 2]
-        + np.exp(-t8 - t13 - t17 + dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t8
+            - t13
+            - t17
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[1, 1]
         * X_lu[3, 1]
         * X_l[2, 3]
-        + np.exp(-t7 - t13 - t19 + dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t7
+            - t13
+            - t19
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[3, 1]
         * X_lu[2, 3]
         * X_l[2, 2]
-        + np.exp(-t8 - t13 - t21 - dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t8
+            - t13
+            - t21
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[2, 1]
         * X_lu[3, 2]
         * X_l[2, 3]
-        + np.exp(-t8 - t13 - t19 + dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t8
+            - t13
+            - t19
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[3, 1]
         * X_lu[3, 3]
         * X_l[2, 3]
     )
     Xmean[2, 2] = (
-        np.exp(-t4 - t15 - t20 - dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        np.exp(
+            -t4
+            - t15
+            - t20
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[0, 2]
         * X_lu[0, 0]
         * X_l[2, 0]
-        + np.exp(-t4 - t15 - t22 + dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t4
+            - t15
+            - t22
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[1, 2]
         * X_lu[0, 1]
         * X_l[2, 0]
-        + np.exp(-t6 - t15 - t20 - dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t6
+            - t15
+            - t20
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[0, 2]
         * X_lu[1, 0]
         * X_l[2, 1]
-        + np.exp(-t4 - t15 - t23 - dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t4
+            - t15
+            - t23
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[2, 2]
         * X_lu[0, 2]
         * X_l[2, 0]
-        + np.exp(-t7 - t15 - t20 - dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t7
+            - t15
+            - t20
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[0, 2]
         * X_lu[2, 0]
         * X_l[2, 2]
-        + np.exp(-t6 - t15 - t22 + dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t6
+            - t15
+            - t22
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[1, 2]
         * X_lu[1, 1]
         * X_l[2, 1]
-        + np.exp(-t4 - t15 - t24 + dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t4
+            - t15
+            - t24
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[3, 2]
         * X_lu[0, 3]
         * X_l[2, 0]
-        + np.exp(-t8 - t15 - t20 - dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t8
+            - t15
+            - t20
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[0, 2]
         * X_lu[3, 0]
         * X_l[2, 3]
-        + np.exp(-t6 - t15 - t23 - dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t6
+            - t15
+            - t23
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[2, 2]
         * X_lu[1, 2]
         * X_l[2, 1]
-        + np.exp(-t7 - t15 - t22 + dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t7
+            - t15
+            - t22
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[1, 2]
         * X_lu[2, 1]
         * X_l[2, 2]
-        + np.exp(-t7 - t15 - t23 - dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t7
+            - t15
+            - t23
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[2, 2]
         * X_lu[2, 2]
         * X_l[2, 2]
-        + np.exp(-t6 - t15 - t24 + dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t6
+            - t15
+            - t24
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[3, 2]
         * X_lu[1, 3]
         * X_l[2, 1]
-        + np.exp(-t8 - t15 - t22 + dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t8
+            - t15
+            - t22
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[1, 2]
         * X_lu[3, 1]
         * X_l[2, 3]
-        + np.exp(-t7 - t15 - t24 + dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t7
+            - t15
+            - t24
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[3, 2]
         * X_lu[2, 3]
         * X_l[2, 2]
-        + np.exp(-t8 - t15 - t23 - dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t8
+            - t15
+            - t23
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[2, 2]
         * X_lu[3, 2]
         * X_l[2, 3]
-        + np.exp(-t8 - t15 - t24 + dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t8
+            - t15
+            - t24
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[3, 2]
         * X_lu[3, 3]
         * X_l[2, 3]
     )
     Xmean[2, 3] = (
-        np.exp(-t4 - t16 - t22 - dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        np.exp(
+            -t4
+            - t16
+            - t22
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[0, 3]
         * X_lu[0, 0]
         * X_l[2, 0]
-        + np.exp(-t4 - t16 - t20 + dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t4
+            - t16
+            - t20
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[1, 3]
         * X_lu[0, 1]
         * X_l[2, 0]
-        + np.exp(-t6 - t16 - t22 - dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t6
+            - t16
+            - t22
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[0, 3]
         * X_lu[1, 0]
         * X_l[2, 1]
-        + np.exp(-t4 - t16 - t24 - dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t4
+            - t16
+            - t24
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[2, 3]
         * X_lu[0, 2]
         * X_l[2, 0]
-        + np.exp(-t6 - t16 - t20 + dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t6
+            - t16
+            - t20
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[1, 3]
         * X_lu[1, 1]
         * X_l[2, 1]
-        + np.exp(-t7 - t16 - t22 - dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t7
+            - t16
+            - t22
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[0, 3]
         * X_lu[2, 0]
         * X_l[2, 2]
-        + np.exp(-t4 - t16 - t23 + dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t4
+            - t16
+            - t23
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[3, 3]
         * X_lu[0, 3]
         * X_l[2, 0]
-        + np.exp(-t7 - t16 - t20 + dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t7
+            - t16
+            - t20
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[1, 3]
         * X_lu[2, 1]
         * X_l[2, 2]
-        + np.exp(-t6 - t16 - t24 - dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t6
+            - t16
+            - t24
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[2, 3]
         * X_lu[1, 2]
         * X_l[2, 1]
-        + np.exp(-t8 - t16 - t22 - dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t8
+            - t16
+            - t22
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[0, 3]
         * X_lu[3, 0]
         * X_l[2, 3]
-        + np.exp(-t7 - t16 - t24 - dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t7
+            - t16
+            - t24
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[2, 3]
         * X_lu[2, 2]
         * X_l[2, 2]
-        + np.exp(-t8 - t16 - t20 + dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t8
+            - t16
+            - t20
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[1, 3]
         * X_lu[3, 1]
         * X_l[2, 3]
-        + np.exp(-t6 - t16 - t23 + dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t6
+            - t16
+            - t23
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[3, 3]
         * X_lu[1, 3]
         * X_l[2, 1]
-        + np.exp(-t7 - t16 - t23 + dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t7
+            - t16
+            - t23
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[3, 3]
         * X_lu[2, 3]
         * X_l[2, 2]
-        + np.exp(-t8 - t16 - t24 - dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t8
+            - t16
+            - t24
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[2, 3]
         * X_lu[3, 2]
         * X_l[2, 3]
-        + np.exp(-t8 - t16 - t23 + dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t8
+            - t16
+            - t23
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[3, 3]
         * X_lu[3, 3]
         * X_l[2, 3]
     )
     Xmean[3, 0] = (
-        np.exp(-t6 - t13 - t17 - dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        np.exp(
+            -t6
+            - t13
+            - t17
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[0, 0]
         * X_lu[0, 0]
         * X_l[3, 0]
-        + np.exp(-t4 - t13 - t17 - dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t4
+            - t13
+            - t17
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[0, 0]
         * X_lu[1, 0]
         * X_l[3, 1]
-        + np.exp(-t6 - t13 - t18 + dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t6
+            - t13
+            - t18
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[1, 0]
         * X_lu[0, 1]
         * X_l[3, 0]
-        + np.exp(-t4 - t13 - t18 + dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t4
+            - t13
+            - t18
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[1, 0]
         * X_lu[1, 1]
         * X_l[3, 1]
-        + np.exp(-t6 - t13 - t19 - dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t6
+            - t13
+            - t19
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[2, 0]
         * X_lu[0, 2]
         * X_l[3, 0]
-        + np.exp(-t8 - t13 - t17 - dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t8
+            - t13
+            - t17
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[0, 0]
         * X_lu[2, 0]
         * X_l[3, 2]
-        + np.exp(-t4 - t13 - t19 - dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t4
+            - t13
+            - t19
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[2, 0]
         * X_lu[1, 2]
         * X_l[3, 1]
-        + np.exp(-t7 - t13 - t17 - dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t7
+            - t13
+            - t17
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[0, 0]
         * X_lu[3, 0]
         * X_l[3, 3]
-        + np.exp(-t8 - t13 - t18 + dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t8
+            - t13
+            - t18
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[1, 0]
         * X_lu[2, 1]
         * X_l[3, 2]
-        + np.exp(-t6 - t13 - t21 + dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t6
+            - t13
+            - t21
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[3, 0]
         * X_lu[0, 3]
         * X_l[3, 0]
-        + np.exp(-t8 - t13 - t19 - dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t8
+            - t13
+            - t19
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[2, 0]
         * X_lu[2, 2]
         * X_l[3, 2]
-        + np.exp(-t4 - t13 - t21 + dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t4
+            - t13
+            - t21
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[3, 0]
         * X_lu[1, 3]
         * X_l[3, 1]
-        + np.exp(-t7 - t13 - t18 + dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t7
+            - t13
+            - t18
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[1, 0]
         * X_lu[3, 1]
         * X_l[3, 3]
-        + np.exp(-t7 - t13 - t19 - dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t7
+            - t13
+            - t19
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[2, 0]
         * X_lu[3, 2]
         * X_l[3, 3]
-        + np.exp(-t8 - t13 - t21 + dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t8
+            - t13
+            - t21
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[3, 0]
         * X_lu[2, 3]
         * X_l[3, 2]
-        + np.exp(-t7 - t13 - t21 + dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t7
+            - t13
+            - t21
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[3, 0]
         * X_lu[3, 3]
         * X_l[3, 3]
     )
     Xmean[3, 1] = (
-        np.exp(-t6 - t11 - t18 - dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        np.exp(
+            -t6
+            - t11
+            - t18
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[0, 1]
         * X_lu[0, 0]
         * X_l[3, 0]
-        + np.exp(-t4 - t11 - t18 - dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t4
+            - t11
+            - t18
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[0, 1]
         * X_lu[1, 0]
         * X_l[3, 1]
-        + np.exp(-t6 - t11 - t17 + dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t6
+            - t11
+            - t17
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[1, 1]
         * X_lu[0, 1]
         * X_l[3, 0]
-        + np.exp(-t4 - t11 - t17 + dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t4
+            - t11
+            - t17
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[1, 1]
         * X_lu[1, 1]
         * X_l[3, 1]
-        + np.exp(-t8 - t11 - t18 - dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t8
+            - t11
+            - t18
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[0, 1]
         * X_lu[2, 0]
         * X_l[3, 2]
-        + np.exp(-t6 - t11 - t21 - dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t6
+            - t11
+            - t21
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[2, 1]
         * X_lu[0, 2]
         * X_l[3, 0]
-        + np.exp(-t4 - t11 - t21 - dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t4
+            - t11
+            - t21
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[2, 1]
         * X_lu[1, 2]
         * X_l[3, 1]
-        + np.exp(-t6 - t11 - t19 + dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t6
+            - t11
+            - t19
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[3, 1]
         * X_lu[0, 3]
         * X_l[3, 0]
-        + np.exp(-t7 - t11 - t18 - dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t7
+            - t11
+            - t18
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[0, 1]
         * X_lu[3, 0]
         * X_l[3, 3]
-        + np.exp(-t8 - t11 - t17 + dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t8
+            - t11
+            - t17
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[1, 1]
         * X_lu[2, 1]
         * X_l[3, 2]
-        + np.exp(-t4 - t11 - t19 + dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t4
+            - t11
+            - t19
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[3, 1]
         * X_lu[1, 3]
         * X_l[3, 1]
-        + np.exp(-t7 - t11 - t17 + dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t7
+            - t11
+            - t17
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[1, 1]
         * X_lu[3, 1]
         * X_l[3, 3]
-        + np.exp(-t8 - t11 - t21 - dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t8
+            - t11
+            - t21
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[2, 1]
         * X_lu[2, 2]
         * X_l[3, 2]
-        + np.exp(-t8 - t11 - t19 + dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t8
+            - t11
+            - t19
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[3, 1]
         * X_lu[2, 3]
         * X_l[3, 2]
-        + np.exp(-t7 - t11 - t21 - dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t7
+            - t11
+            - t21
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[2, 1]
         * X_lu[3, 2]
         * X_l[3, 3]
-        + np.exp(-t7 - t11 - t19 + dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t7
+            - t11
+            - t19
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[3, 1]
         * X_lu[3, 3]
         * X_l[3, 3]
     )
     Xmean[3, 2] = (
-        np.exp(-t6 - t16 - t20 - dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        np.exp(
+            -t6
+            - t16
+            - t20
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[0, 2]
         * X_lu[0, 0]
         * X_l[3, 0]
-        + np.exp(-t4 - t16 - t20 - dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t4
+            - t16
+            - t20
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[0, 2]
         * X_lu[1, 0]
         * X_l[3, 1]
-        + np.exp(-t6 - t16 - t22 + dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t6
+            - t16
+            - t22
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[1, 2]
         * X_lu[0, 1]
         * X_l[3, 0]
-        + np.exp(-t8 - t16 - t20 - dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t8
+            - t16
+            - t20
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[0, 2]
         * X_lu[2, 0]
         * X_l[3, 2]
-        + np.exp(-t4 - t16 - t22 + dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t4
+            - t16
+            - t22
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[1, 2]
         * X_lu[1, 1]
         * X_l[3, 1]
-        + np.exp(-t6 - t16 - t23 - dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t6
+            - t16
+            - t23
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[2, 2]
         * X_lu[0, 2]
         * X_l[3, 0]
-        + np.exp(-t4 - t16 - t23 - dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t4
+            - t16
+            - t23
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[2, 2]
         * X_lu[1, 2]
         * X_l[3, 1]
-        + np.exp(-t7 - t16 - t20 - dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t7
+            - t16
+            - t20
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[0, 2]
         * X_lu[3, 0]
         * X_l[3, 3]
-        + np.exp(-t6 - t16 - t24 + dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t6
+            - t16
+            - t24
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[3, 2]
         * X_lu[0, 3]
         * X_l[3, 0]
-        + np.exp(-t8 - t16 - t22 + dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t8
+            - t16
+            - t22
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[1, 2]
         * X_lu[2, 1]
         * X_l[3, 2]
-        + np.exp(-t4 - t16 - t24 + dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t4
+            - t16
+            - t24
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[3, 2]
         * X_lu[1, 3]
         * X_l[3, 1]
-        + np.exp(-t8 - t16 - t23 - dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t8
+            - t16
+            - t23
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[2, 2]
         * X_lu[2, 2]
         * X_l[3, 2]
-        + np.exp(-t7 - t16 - t22 + dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t7
+            - t16
+            - t22
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[1, 2]
         * X_lu[3, 1]
         * X_l[3, 3]
-        + np.exp(-t7 - t16 - t23 - dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t7
+            - t16
+            - t23
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[2, 2]
         * X_lu[3, 2]
         * X_l[3, 3]
-        + np.exp(-t8 - t16 - t24 + dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t8
+            - t16
+            - t24
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[3, 2]
         * X_lu[2, 3]
         * X_l[3, 2]
-        + np.exp(-t7 - t16 - t24 + dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t7
+            - t16
+            - t24
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[3, 2]
         * X_lu[3, 3]
         * X_l[3, 3]
     )
     Xmean[3, 3] = (
-        np.exp(-t6 - t15 - t22 - dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        np.exp(
+            -t6
+            - t15
+            - t22
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[0, 3]
         * X_lu[0, 0]
         * X_l[3, 0]
-        + np.exp(-t4 - t15 - t22 - dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t4
+            - t15
+            - t22
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[0, 3]
         * X_lu[1, 0]
         * X_l[3, 1]
-        + np.exp(-t6 - t15 - t20 + dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t6
+            - t15
+            - t20
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[1, 3]
         * X_lu[0, 1]
         * X_l[3, 0]
-        + np.exp(-t4 - t15 - t20 + dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t4
+            - t15
+            - t20
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[1, 3]
         * X_lu[1, 1]
         * X_l[3, 1]
-        + np.exp(-t6 - t15 - t24 - dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t6
+            - t15
+            - t24
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[2, 3]
         * X_lu[0, 2]
         * X_l[3, 0]
-        + np.exp(-t8 - t15 - t22 - dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t8
+            - t15
+            - t22
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[0, 3]
         * X_lu[2, 0]
         * X_l[3, 2]
-        + np.exp(-t4 - t15 - t24 - dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t4
+            - t15
+            - t24
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[2, 3]
         * X_lu[1, 2]
         * X_l[3, 1]
-        + np.exp(-t8 - t15 - t20 + dd_u[1:] * kp_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t8
+            - t15
+            - t20
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[1, 3]
         * X_lu[2, 1]
         * X_l[3, 2]
-        + np.exp(-t6 - t15 - t23 + dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t6
+            - t15
+            - t23
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[3, 3]
         * X_lu[0, 3]
         * X_l[3, 0]
-        + np.exp(-t7 - t15 - t22 - dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t7
+            - t15
+            - t22
+            - dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[0, 3]
         * X_lu[3, 0]
         * X_l[3, 3]
-        + np.exp(-t4 - t15 - t23 + dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * kp_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t4
+            - t15
+            - t23
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * kp_l[:, :-1] * 1.0j
+        )
         * X_u[3, 3]
         * X_lu[1, 3]
         * X_l[3, 1]
-        + np.exp(-t7 - t15 - t20 + dd_u[1:] * kp_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t7
+            - t15
+            - t20
+            + dd_u[1:] * kp_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[1, 3]
         * X_lu[3, 1]
         * X_l[3, 3]
-        + np.exp(-t8 - t15 - t24 - dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t8
+            - t15
+            - t24
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[2, 3]
         * X_lu[2, 2]
         * X_l[3, 2]
-        + np.exp(-t7 - t15 - t24 - dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t7
+            - t15
+            - t24
+            - dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[2, 3]
         * X_lu[3, 2]
         * X_l[3, 3]
-        + np.exp(-t8 - t15 - t23 + dd_u[1:] * km_u[:, 1:] * 1.0j - dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t8
+            - t15
+            - t23
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            - dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[3, 3]
         * X_lu[2, 3]
         * X_l[3, 2]
-        + np.exp(-t7 - t15 - t23 + dd_u[1:] * km_u[:, 1:] * 1.0j + dd_l[:-1] * km_l[:, :-1] * 1.0j)
+        + np.exp(
+            -t7
+            - t15
+            - t23
+            + dd_u[1:] * km_u[:, 1:] * 1.0j
+            + dd_l[:-1] * km_l[:, :-1] * 1.0j
+        )
         * X_u[3, 3]
         * X_lu[3, 3]
         * X_l[3, 3]

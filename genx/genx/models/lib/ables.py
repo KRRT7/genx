@@ -9,10 +9,11 @@ _ctype = np.complex128
 
 
 def ass_P(k, d, ctype=_ctype):
-    """Assamble the propagation matrix for the layers"""
+    """Assemble the propagation matrix for the layers"""
+    exp_term = np.exp(-1.0j * k * d)
     P = np.zeros((2, 2) + k.shape, dtype=ctype)
-    P[0, 0] = np.exp(-1.0j * k * d)
-    P[1, 1] = 1.0 / P[0, 0]
+    P[0, 0] = exp_term
+    P[1, 1] = 1.0 / exp_term
     return P
 
 
@@ -32,13 +33,13 @@ def ass_X(k, ctype=_ctype):
 
 def ass_X_2int(k_j, k_jm1, ctype=_ctype):
     """Assemble the interface matrix for all interfaces"""
-    # k_j = k[...,1:]
-    # k_jm1 = k[...,:-1]
-
     X = np.empty((2, 2) + k_j.shape, dtype=ctype)
+    k_sum = k_j + k_jm1
+    k_diff = k_jm1 - k_j
+    k_inv = 1.0 / k_jm1
 
-    X[0, 0] = (k_j + k_jm1) / k_jm1 / 2
-    X[0, 1] = (k_jm1 - k_j) / k_jm1 / 2
+    X[0, 0] = k_sum * k_inv / 2
+    X[0, 1] = k_diff * k_inv / 2
     X[1, 0] = X[0, 1]
     X[1, 1] = X[0, 0]
     return X
@@ -68,39 +69,32 @@ def ReflQ(Q, lamda, n, d, sigma):
 
 
 def ReflQ_mag(Q, lamda, n, d, sigma, n_u, dd_u, sigma_u, n_l, dd_l, sigma_l):
-    """Calculate the reflectivity from a multilayer stack with
-    Abeles matrix formalism.
+    """Calculate the reflectivity from a multilayer stack with Abeles matrix formalism."""
 
-    The last layer is the substrate and the first layer is the ambient
-    """
-    # pdb.set_trace()
     k_vac = 2 * np.pi / (lamda * np.ones(Q.shape))[:, np.newaxis]
     kz = Q[:, np.newaxis] / 2.0
-    n_amb2 = (n[:, 0] * n[:, 0])[:, np.newaxis]
-    # print n_amb2.shape
-    # print n.shape, n_l.shape, n_u.shape, kz.shape
-    k = np.sqrt((n * n - n_amb2) * k_vac * k_vac + n_amb2 * kz * kz)
-    k_l = np.sqrt((n_l * n_l - n_amb2) * k_vac * k_vac + n_amb2 * kz * kz)
-    k_u = np.sqrt((n_u * n_u - n_amb2) * k_vac * k_vac + n_amb2 * kz * kz)
-    # print 'k: ', k.shape, k_l.shape, k_u.shape
-    # print 'sigma_l', sigma_l.shape
-    # print 'dd_u ', dd_u.shape
-    # print np.all(n_u == n), np.all(n_l == n)
-    # print np.all(k_ju == k_j), np.all(k_jl == k_j)
+    n_amb2 = n[:, 0] ** 2
 
-    # print d.shape, n.shape, k_j.dtype
-    # X = ass_X(k)
-    # X = im.ass_X_interfacelayer4(k, k_u, k_l, dd_u, dd_l, sigma, sigma_l, sigma_u)
+    k = np.sqrt(
+        (n**2 - n_amb2[:, np.newaxis]) * k_vac**2 + n_amb2[:, np.newaxis] * kz**2
+    )
+    k_l = np.sqrt(
+        (n_l**2 - n_amb2[:, np.newaxis]) * k_vac**2 + n_amb2[:, np.newaxis] * kz**2
+    )
+    k_u = np.sqrt(
+        (n_u**2 - n_amb2[:, np.newaxis]) * k_vac**2 + n_amb2[:, np.newaxis] * kz**2
+    )
+
     X_lu = ass_X_2int(k_u[:, 1:], k_l[:, :-1])
     X_l = ass_X_2int(k_l[:, :-1], k[:, :-1])
     X_u = ass_X_2int(k[:, 1:], k_u[:, 1:])
-    # print 'X: ', X_lu.shape, X_l.shape, X_u.shape
 
-    X = int_lay_xmean.calc_iso_Xmean(X_l, X_lu, X_u, k, k_l, k_u, dd_u, dd_l, sigma, sigma_l, sigma_u)
+    X = int_lay_xmean.calc_iso_Xmean(
+        X_l, X_lu, X_u, k, k_l, k_u, dd_u, dd_l, sigma, sigma_l, sigma_u
+    )
     P = ass_P(k, d)
 
     PX = mu.dot2_Adiag(P[..., 1:-1], X[..., 1:])
-    # print P.dtype, X.dtype, PX.dtype
     M = mu.dot2(X[..., 0], reduce(mu.dot2, np.rollaxis(PX, 3)))
 
     r = M[1, 0] / M[0, 0]
@@ -116,11 +110,15 @@ def ReflQ_ref(Q, lamda, n, d, sigma):
     # Calculates the wavevector in each layer
     Qj = np.sqrt((n[:, np.newaxis] ** 2 - n[-1] ** 2) * Q0**2 + n[-1] ** 2 * Q**2)
     # Fresnel reflectivity for the interfaces
-    rp = (Qj[1:] - Qj[:-1]) / (Qj[1:] + Qj[:-1])  # *exp(-Qj[1:]*Qj[:-1]/2*sigma[:,newaxis]**2)
+    rp = (Qj[1:] - Qj[:-1]) / (
+        Qj[1:] + Qj[:-1]
+    )  # *exp(-Qj[1:]*Qj[:-1]/2*sigma[:,newaxis]**2)
     # print rp.shape #For debugging
     # print d.shape
     # print Qj[1:-1].shape
-    p = np.exp(1.0j * d[:, np.newaxis] * Qj[1:-1])  # Ignoring the top and bottom layer for the calc.
+    p = np.exp(
+        1.0j * d[:, np.newaxis] * Qj[1:-1]
+    )  # Ignoring the top and bottom layer for the calc.
     # print p.shape #For debugging
     # Setting up a matrix for the reduce function. Reduce only takes one array
     # as argument
