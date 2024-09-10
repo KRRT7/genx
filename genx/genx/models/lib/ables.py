@@ -96,7 +96,9 @@ def ReflQ_mag(Q, lamda, n, d, sigma, n_u, dd_u, sigma_u, n_l, dd_l, sigma_l):
     X_u = ass_X_2int(k[:, 1:], k_u[:, 1:])
     # print 'X: ', X_lu.shape, X_l.shape, X_u.shape
 
-    X = int_lay_xmean.calc_iso_Xmean(X_l, X_lu, X_u, k, k_l, k_u, dd_u, dd_l, sigma, sigma_l, sigma_u)
+    X = int_lay_xmean.calc_iso_Xmean(
+        X_l, X_lu, X_u, k, k_l, k_u, dd_u, dd_l, sigma, sigma_l, sigma_u
+    )
     P = ass_P(k, d)
 
     PX = mu.dot2_Adiag(P[..., 1:-1], X[..., 1:])
@@ -109,30 +111,20 @@ def ReflQ_mag(Q, lamda, n, d, sigma, n_u, dd_u, sigma_u, n_l, dd_l, sigma_l):
 
 
 def ReflQ_ref(Q, lamda, n, d, sigma):
-    # Length of k-vector in vaccum
     d = d[1:-1]
     sigma = sigma[:-1]
     Q0 = 4 * np.pi / lamda
-    # Calculates the wavevector in each layer
-    Qj = np.sqrt((n[:, np.newaxis] ** 2 - n[-1] ** 2) * Q0**2 + n[-1] ** 2 * Q**2)
-    # Fresnel reflectivity for the interfaces
-    rp = (Qj[1:] - Qj[:-1]) / (Qj[1:] + Qj[:-1])  # *exp(-Qj[1:]*Qj[:-1]/2*sigma[:,newaxis]**2)
-    # print rp.shape #For debugging
-    # print d.shape
-    # print Qj[1:-1].shape
-    p = np.exp(1.0j * d[:, np.newaxis] * Qj[1:-1])  # Ignoring the top and bottom layer for the calc.
-    # print p.shape #For debugging
-    # Setting up a matrix for the reduce function. Reduce only takes one array
-    # as argument
-    rpp = np.array(list(map(lambda x, y: [x, y], rp[1:], p)))
+    n_last_sq = n[-1] ** 2
+    Qj = np.sqrt((n[:, np.newaxis] ** 2 - n_last_sq) * Q0**2 + n_last_sq * Q**2)
 
-    # print rpp.shape
-    # Paratt's recursion formula
-    def formula(rtot, rint):
-        return (rint[0] + rtot * rint[1]) / (1 + rtot * rint[0] * rint[1])
+    rp = (Qj[1:] - Qj[:-1]) / (Qj[1:] + Qj[:-1])
+    p = np.exp(1.0j * d[:, np.newaxis] * Qj[1:-1])
 
-    # Implement the recursion formula
-    r = reduce(formula, rpp, rp[0])
-    # print r.shape
-    # return the reflectivity
+    # Initialize r with the last interface reflectivity
+    r = rp[0]
+
+    # Apply Paratt's recursion formula using vectorized operations
+    for k in range(1, len(rp)):
+        r = (rp[k] + r * p[k - 1]) / (1 + rp[k] * r * p[k - 1])
+
     return np.abs(r) ** 2
