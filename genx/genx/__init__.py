@@ -19,16 +19,24 @@ class GenxModuleFinder(MetaPathFinder):
         if fullname.startswith("genx"):
             return None
         itms = fullname.split(".")
-        fname = os.path.join(os.path.dirname(os.path.abspath(__file__)), *itms) + ".py"
-        pname = os.path.join(os.path.dirname(os.path.abspath(__file__)), *itms, "__init__.py")
+        relative_path = os.path.join(self.base_path, *itms)
+
+        # Compute possible paths only once
+        fname = f"{relative_path}.py"
+        pname = os.path.join(relative_path, "__init__.py")
+
         if os.path.exists(fname):
             m = import_module("genx." + fullname)
             sys.modules[fullname] = m
             return spec_from_file_location(fullname, fname)
-        if os.path.exists(pname):
+        elif os.path.exists(pname):
             m = import_module("genx." + fullname)
             sys.modules[fullname] = m
             return spec_from_file_location(fullname, pname)
+        return None
+
+    def __init__(self):
+        self.base_path = os.path.dirname(os.path.abspath(__file__))
 
 
 sys.meta_path.insert(0, GenxModuleFinder())
