@@ -74,7 +74,9 @@ class Simplex:
         self.currenterror = 0
 
         # Initialize vertices
-        for vertex in range(0, self.numvars + 3):  # Two extras to store centroid and reflected point
+        for vertex in range(
+            0, self.numvars + 3
+        ):  # Two extras to store centroid and reflected point
             self.simplex.append(copy.copy(self.guess))
         # Use initial increments
         for vertex in range(0, self.numvars + 1):
@@ -127,7 +129,8 @@ class Simplex:
             # Optionally, print progress information
             if monitor:
                 iprint(
-                    "Iteration = %d   Best = %f   Worst = %f" % (i, self.errors[self.lowest], self.errors[self.highest])
+                    "Iteration = %d   Best = %f   Worst = %f"
+                    % (i, self.errors[self.lowest], self.errors[self.highest])
                 )
 
             if T <= epsilon:  # We converged!  Break out of loop!
@@ -186,26 +189,40 @@ class Simplex:
 
     def contract_simplex(self):
         for x in range(0, self.numvars):
-            self.guess[x] = self.kC * self.simplex[self.highest][x] + (1 - self.kC) * self.simplex[self.numvars + 1][x]
+            self.guess[x] = (
+                self.kC * self.simplex[self.highest][x]
+                + (1 - self.kC) * self.simplex[self.numvars + 1][x]
+            )
         return
 
     def expand_simplex(self):
         for x in range(0, self.numvars):
-            self.guess[x] = self.kE * self.guess[x] + (1 - self.kE) * self.simplex[self.numvars + 1][x]
+            self.guess[x] = (
+                self.kE * self.guess[x]
+                + (1 - self.kE) * self.simplex[self.numvars + 1][x]
+            )
         return
 
     def reflect_simplex(self):
-        for x in range(0, self.numvars):
-            self.guess[x] = self.kR * self.simplex[self.highest][x] + (1 - self.kR) * self.simplex[self.numvars + 1][x]
-            self.simplex[self.numvars + 2][x] = self.guess[x]  # REMEMBER THE REFLECTED POINT
-        return
+        simplex = self.simplex
+        kR = self.kR
+        highest = self.highest
+        centroid = simplex[self.numvars + 1]
+        reflected = simplex[self.numvars + 2]
+
+        for x in range(self.numvars):
+            value = kR * simplex[highest][x] + (1 - kR) * centroid[x]
+            self.guess[x] = value
+            reflected[x] = value
 
     def multiple_contract_simplex(self):
         for vertex in range(0, self.numvars + 1):
             if vertex == self.lowest:
                 continue
             for x in range(0, self.numvars):
-                self.simplex[vertex][x] = 0.5 * (self.simplex[vertex][x] + self.simplex[self.lowest][x])
+                self.simplex[vertex][x] = 0.5 * (
+                    self.simplex[vertex][x] + self.simplex[self.lowest][x]
+                )
         self.calculate_errors_at_vertices()
         return
 
@@ -237,6 +254,15 @@ class Simplex:
             self.errors[vertex] = self.currenterror
         return
 
+    def calculate_errors_at_vertices(self):
+        for i, vertex in enumerate(self.simplex[: self.numvars + 1]):
+            self.errors[i] = self.testfunc(vertex)
+
 
 def objective_function(args):
-    return abs(args[0] * args[0] * args[0] * 5 - args[1] * args[1] * 7 + math.sqrt(abs(args[0])) - 118)
+    return abs(
+        args[0] * args[0] * args[0] * 5
+        - args[1] * args[1] * 7
+        + math.sqrt(abs(args[0]))
+        - 118
+    )
