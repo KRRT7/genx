@@ -14,15 +14,18 @@ import numpy
 
 
 def get_html_code(Z):
-    adress = "http://physics.nist.gov/cgi-bin/ffast/ffast.pl?Z=%d&Formula=&gtype=4&lower=&upper=&density=&frames=no" % Z
+    adress = (
+        "http://physics.nist.gov/cgi-bin/ffast/ffast.pl?Z=%d&Formula=&gtype=4&lower=&upper=&density=&frames=no"
+        % Z
+    )
     f = urllib.request.urlopen(adress)
     return f.readlines()
 
 
 def find_line(lines, string_to_find):
-    for i, line in enumerate(lines):
-        if line.find(string_to_find) != -1:
-            return line, i
+    for idx, line in enumerate(lines):
+        if string_to_find in line:
+            return (line, idx)
     return None, None
 
 
